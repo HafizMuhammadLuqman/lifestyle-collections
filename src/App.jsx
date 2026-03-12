@@ -169,6 +169,7 @@ export default function App() {
   }, [STORE.banners]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2800); };
+
   const addCart = (p, qty=1) => {
     setCart(prev => { const ex = prev.find(i => i.id === p.id); return ex ? prev.map(i => i.id===p.id ? {...i,qty:i.qty+qty} : i) : [...prev, {...p,qty}]; });
     showToast(`✅ ${p.name} added to cart!`);
@@ -525,6 +526,17 @@ function ProductDetail({ product:p, STORE, onBack, onAddCart, isWishlisted, onWi
   );
 }
 
+function Field({ label, val, onChange, err, placeholder, type="text" }) {
+  return (
+    <div style={{marginBottom:10}}>
+      <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>{label}</label>
+      <input value={val} type={type} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+        style={{width:"100%",padding:"9px 11px",border:`1px solid ${err?"#f44336":"#e0e0e0"}`,borderRadius:8,fontSize:13,outline:"none",background:"#fafafa"}} />
+      {err && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {err}</div>}
+    </div>
+  );
+}
+
 function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, removeCart }) {
   const [form, setForm] = useState({ name:"",phone:"",email:"",house:"",area:"",city:"",postal:"",landmark:"",payMethod:"COD",transId:"",screenshot:null });
   const [errors, setErrors] = useState({});
@@ -532,7 +544,18 @@ function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, re
   const [placing, setPlacing] = useState(false);
   const fileRef = useRef();
   const total = cartTotal + STORE.delivery;
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const setF = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const validateStep2 = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Required";
+    if (!form.phone.trim()) e.phone = "Required";
+    if (!form.house.trim()) e.house = "Required";
+    if (!form.area.trim()) e.area = "Required";
+    if (!form.city.trim()) e.city = "Required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const placeOrder = async () => {
     const e = {};
@@ -572,6 +595,7 @@ function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, re
             </div>
           ))}
         </div>
+
         {step===1 && (
           <div style={{background:"#fff",borderRadius:12,padding:16}}>
             <h3 style={{margin:"0 0 14px",fontSize:16}}>📦 Your Cart</h3>
@@ -601,36 +625,38 @@ function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, re
             <button onClick={()=>setStep(2)} style={{width:"100%",background:"#FF6B35",border:"none",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",marginTop:14}}>Continue →</button>
           </div>
         )}
+
         {step===2 && (
           <div style={{background:"#fff",borderRadius:12,padding:16}}>
             <h3 style={{margin:"0 0 14px",fontSize:16}}>👤 Your Details</h3>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <Field label="Full Name *" val={form.name} onChange={v=>set("name",v)} err={errors.name} placeholder="Your full name" />
-              <Field label="Phone Number *" val={form.phone} onChange={v=>set("phone",v)} err={errors.phone} placeholder="+92 3XX XXXXXXX" />
+              <Field label="Full Name *" val={form.name} onChange={v=>setF("name",v)} err={errors.name} placeholder="Your full name" />
+              <Field label="Phone Number *" val={form.phone} onChange={v=>setF("phone",v)} err={errors.phone} placeholder="+92 3XX XXXXXXX" />
             </div>
-            <Field label="Email Address" val={form.email} onChange={v=>set("email",v)} placeholder="email@example.com" />
+            <Field label="Email Address" val={form.email} onChange={v=>setF("email",v)} placeholder="email@example.com" />
             <h4 style={{margin:"14px 0 10px",color:"#555",fontSize:13}}>🏠 Delivery Address</h4>
-            <Field label="House/Flat & Street *" val={form.house} onChange={v=>set("house",v)} err={errors.house} placeholder="House No., Street" />
+            <Field label="House/Flat & Street *" val={form.house} onChange={v=>setF("house",v)} err={errors.house} placeholder="House No., Street" />
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <Field label="Area / Mohalla *" val={form.area} onChange={v=>set("area",v)} err={errors.area} placeholder="Your area" />
-              <Field label="City *" val={form.city} onChange={v=>set("city",v)} err={errors.city} placeholder="Your city" />
+              <Field label="Area / Mohalla *" val={form.area} onChange={v=>setF("area",v)} err={errors.area} placeholder="Your area" />
+              <Field label="City *" val={form.city} onChange={v=>setF("city",v)} err={errors.city} placeholder="Your city" />
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <Field label="Postal Code" val={form.postal} onChange={v=>set("postal",v)} placeholder="XXXXX" />
-              <Field label="Landmark" val={form.landmark} onChange={v=>set("landmark",v)} placeholder="Mosque, School, etc." />
+              <Field label="Postal Code" val={form.postal} onChange={v=>setF("postal",v)} placeholder="XXXXX" />
+              <Field label="Landmark" val={form.landmark} onChange={v=>setF("landmark",v)} placeholder="Mosque, School, etc." />
             </div>
             <div style={{display:"flex",gap:8,marginTop:14}}>
               <button onClick={()=>setStep(1)} style={{flex:1,background:"#f5f5f5",border:"none",color:"#555",padding:"12px",borderRadius:10,cursor:"pointer",fontWeight:600}}>← Back</button>
-              <button onClick={()=>{const e={};if(!form.name.trim())e.name="Required";if(!form.phone.trim())e.phone="Required";if(!form.house.trim())e.house="Required";if(!form.area.trim())e.area="Required";if(!form.city.trim())e.city="Required";setErrors(e);if(Object.keys(e).length===0)setStep(3);}}
+              <button onClick={()=>{ if(validateStep2()) setStep(3); }}
                 style={{flex:2,background:"#FF6B35",border:"none",color:"#fff",padding:"12px",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>Payment →</button>
             </div>
           </div>
         )}
+
         {step===3 && (
           <div style={{background:"#fff",borderRadius:12,padding:16}}>
             <h3 style={{margin:"0 0 14px",fontSize:16}}>💳 Payment Method</h3>
             {[{v:"COD",icon:"💵",label:"Cash on Delivery",desc:"Pay when delivered"},{v:"jazz",icon:"📱",label:"JazzCash",desc:`Transfer to: ${STORE.jazz}`},{v:"easypaisa",icon:"💜",label:"EasyPaisa",desc:`Transfer to: ${STORE.easypaisa}`}].map(pm=>(
-              <div key={pm.v} onClick={()=>set("payMethod",pm.v)}
+              <div key={pm.v} onClick={()=>setF("payMethod",pm.v)}
                 style={{display:"flex",alignItems:"center",gap:12,padding:12,borderRadius:12,border:`2px solid ${form.payMethod===pm.v?"#FF6B35":"#e0e0e0"}`,marginBottom:8,cursor:"pointer",background:form.payMethod===pm.v?"#FFF5F0":"#fff"}}>
                 <span style={{fontSize:26}}>{pm.icon}</span>
                 <div style={{flex:1}}>
@@ -650,10 +676,10 @@ function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, re
                   2. Enter Transaction ID below<br/>
                   3. Send screenshot to WhatsApp: <a href={`https://wa.me/${STORE.whatsapp}`} style={{color:"#25D366"}}>{STORE.displayPhone}</a>
                 </div>
-                <Field label="Transaction ID *" val={form.transId} onChange={v=>set("transId",v)} err={errors.transId} placeholder="Enter Transaction ID" />
+                <Field label="Transaction ID *" val={form.transId} onChange={v=>setF("transId",v)} err={errors.transId} placeholder="Enter Transaction ID" />
                 <div style={{marginTop:8}}>
                   <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:5,display:"block"}}>Upload Screenshot (optional)</label>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>set("screenshot",ev.target.result);r.readAsDataURL(f);}}} style={{fontSize:12,color:"#555"}} />
+                  <input ref={fileRef} type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>setF("screenshot",ev.target.result);r.readAsDataURL(f);}}} style={{fontSize:12,color:"#555"}} />
                   {form.screenshot && <img src={form.screenshot} alt="receipt" style={{width:110,height:90,objectFit:"cover",borderRadius:8,marginTop:6,border:"1px solid #e0e0e0"}} />}
                 </div>
               </div>
@@ -671,17 +697,6 @@ function CheckoutPage({ cart, cartTotal, STORE, onBack, onSuccess, updateQty, re
   );
 }
 
-function Field({ label, val, onChange, err, placeholder, type="text" }) {
-  return (
-    <div style={{marginBottom:10}}>
-      <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>{label}</label>
-      <input value={val} type={type} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{width:"100%",padding:"9px 11px",border:`1px solid ${err?"#f44336":"#e0e0e0"}`,borderRadius:8,fontSize:13,outline:"none",background:"#fafafa"}} />
-      {err && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {err}</div>}
-    </div>
-  );
-}
-
 function SuccessPage({ order, STORE, onHome }) {
   return (
     <div style={{fontFamily:"'Segoe UI',sans-serif",minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",padding:14}}>
@@ -691,7 +706,9 @@ function SuccessPage({ order, STORE, onHome }) {
         <div style={{fontSize:13,color:"#888",marginBottom:18}}>Order ID: <strong style={{color:"#FF6B35"}}>{order?.id}</strong></div>
         <div style={{background:"#F5F5F5",borderRadius:10,padding:14,textAlign:"left",marginBottom:18}}>
           <div style={{fontSize:13,color:"#555",lineHeight:2}}>
-            <b>Customer:</b> {order?.customer?.name}<br/><b>Phone:</b> {order?.customer?.phone}<br/><b>City:</b> {order?.customer?.city}<br/>
+            <b>Customer:</b> {order?.customer?.name}<br/>
+            <b>Phone:</b> {order?.customer?.phone}<br/>
+            <b>City:</b> {order?.customer?.city}<br/>
             <b>Payment:</b> {order?.customer?.payMethod==="COD"?"Cash on Delivery":order?.customer?.payMethod==="jazz"?"JazzCash":"EasyPaisa"}<br/>
             <b>Total:</b> <span style={{color:"#FF6B35",fontWeight:700}}>{formatPrice(order?.total)}</span>
           </div>
@@ -714,8 +731,13 @@ function SuccessPage({ order, STORE, onHome }) {
 }
 
 function AdminLogin({ onLogin }) {
-  const [user, setUser] = useState(""); const [pass, setPass] = useState(""); const [err, setErr] = useState("");
-  const login = () => { if (user===ADMIN_CREDS.name && pass===ADMIN_CREDS.password) onLogin(); else setErr("Wrong username or password!"); };
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const login = () => {
+    if (user===ADMIN_CREDS.name && pass===ADMIN_CREDS.password) onLogin();
+    else setErr("Wrong username or password!");
+  };
   return (
     <div style={{fontFamily:"'Segoe UI',sans-serif",minHeight:"100vh",background:"linear-gradient(135deg,#FF6B35,#E85520)",display:"flex",alignItems:"center",justifyContent:"center",padding:14}}>
       <div style={{background:"#fff",borderRadius:18,padding:36,maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
@@ -781,6 +803,7 @@ function AdminPanel({ page, go, products, orders, storeConfig, categories, saveP
                 <button onClick={()=>go("adminOrders")} style={{background:"#2196F3",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>📋 Orders</button>
                 <button onClick={()=>go("adminCats")} style={{background:"#4CAF50",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>🗂️ Categories</button>
                 <button onClick={()=>go("adminStore")} style={{background:"#9C27B0",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>⚙️ Settings</button>
+                <button onClick={()=>go("adminBanners")} style={{background:"#FF9800",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>🖼️ Banners</button>
               </div>
             </div>
           </div>
@@ -872,548 +895,6 @@ function AdminPanel({ page, go, products, orders, storeConfig, categories, saveP
 }
 
 function CategoriesManager({ categories, saveCategories, showToast, products }) {
-  const [cats, setCats] = useState(categories);
-  const [saving, setSaving] = useState(false);
-  const [editIdx, setEditIdx] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editIcon, setEditIcon] = useState("");
-  const [editColor, setEditColor] = useState("");
-
-  const startEdit = (idx) => { setEditIdx(idx); setEditName(cats[idx].name); setEditIcon(cats[idx].icon); setEditColor(cats[idx].color); };
-  const saveEdit = () => {
-    if (!editName.trim()) { showToast("⚠️ Name khali nahi ho sakta!"); return; }
-    setCats(prev => prev.map((c,i) => i===editIdx ? {...c, name: editName.trim(), icon: editIcon, color: editColor} : c));
-    setEditIdx(null);
-  };
-  const saveAll = async () => { setSaving(true); await saveCategories(cats); showToast("✅ Categories save ho gayi!"); setSaving(false); };
-  const addCategory = () => { setCats(prev => [...prev, { name: "New Category", icon: "📦", color: "#FF6B35" }]); setEditIdx(cats.length); setEditName("New Category"); setEditIcon("📦"); setEditColor("#FF6B35"); };
-  const deleteCategory = (idx) => {
-    if (cats.length <= 1) { showToast("⚠️ Kam se kam 1 category zaroor honi chahiye!"); return; }
-    if (window.confirm(`"${cats[idx].name}" delete karein?`)) { setCats(prev => prev.filter((_,i) => i!==idx)); setEditIdx(null); }
-  };
-  const colorOptions = ["#2196F3","#E91E8C","#FF6B35","#4CAF50","#9C27B0","#FF9800","#F44336","#795548","#009688","#607D8B","#E91E63","#00BCD4"];
-
-  return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-        <h2 style={{margin:0,fontSize:20,color:"#222"}}>🗂️ Categories Manager</h2>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={addCategory} style={{background:"#4CAF50",border:"none",color:"#fff",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add</button>
-          <button onClick={saveAll} disabled={saving} style={{background:saving?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"9px 16px",borderRadius:10,cursor:saving?"not-allowed":"pointer",fontWeight:600,fontSize:13}}>
-            {saving?"⏳ Saving...":"💾 Save All"}
-          </button>
-        </div>
-      </div>
-      <div style={{display:"grid",gap:12}}>
-        {cats.map((cat, idx) => (
-          <div key={idx} style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px"}}>
-              <div style={{width:48,height:48,borderRadius:12,background:`${cat.color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{cat.icon}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:"#222"}}>{cat.name}</div>
-                <div style={{fontSize:11,color:"#888",marginTop:2}}>{products.filter(p=>p.category===cat.name).length} products</div>
-              </div>
-              <div style={{display:"flex",gap:6}}>
-                <button onClick={()=>startEdit(idx)} style={{background:"#E3F2FD",border:"none",color:"#1565C0",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
-                <button onClick={()=>deleteCategory(idx)} style={{background:"#FFEBEE",border:"none",color:"#C62828",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Del</button>
-              </div>
-            </div>
-            {editIdx===idx && (
-              <div style={{background:"#FFF5F0",borderRadius:"0 0 12px 12px",padding:"16px 18px",borderTop:"2px solid #FF6B35"}}>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                  <div>
-                    <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Category Name</label>
-                    <input value={editName} onChange={e=>setEditName(e.target.value)}
-                      style={{width:"100%",padding:"9px 12px",border:"2px solid #FF6B35",borderRadius:8,fontSize:14,outline:"none",fontWeight:600}} />
-                  </div>
-                  <div>
-                    <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Icon (Emoji)</label>
-                    <input value={editIcon} onChange={e=>setEditIcon(e.target.value)}
-                      style={{width:"100%",padding:"9px 12px",border:"1px solid #e0e0e0",borderRadius:8,fontSize:22,outline:"none",textAlign:"center"}} />
-                  </div>
-                </div>
-                <div style={{marginBottom:12}}>
-                  <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:6,display:"block"}}>Color</label>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {colorOptions.map(c=>(
-                      <div key={c} onClick={()=>setEditColor(c)} style={{width:32,height:32,borderRadius:8,background:c,cursor:"pointer",border:editColor===c?"3px solid #222":"2px solid transparent",transition:"all .2s"}} />
-                    ))}
-                  </div>
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={saveEdit} style={{flex:1,background:"#FF6B35",border:"none",color:"#fff",padding:"10px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>✅ Save Changes</button>
-                  <button onClick={()=>setEditIdx(null)} style={{background:"#f5f5f5",border:"none",color:"#555",padding:"10px 16px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:13}}>Cancel</button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div style={{background:"#E8F5E9",borderRadius:12,padding:14,marginTop:16,fontSize:13,color:"#2E7D32"}}>
-        ℹ️ <strong>Note:</strong> Changes ke baad "Save All" zaroor dabayein — Firebase pe save ho jayega!
-      </div>
-    </div>
-  );
-}
-
-function AddProductForm({ editingProduct, showToast, onSave, onDone, categories }) {
-  const isEdit = !!editingProduct;
-  const [form, setForm] = useState({
-    name: editingProduct?.name||"", category: editingProduct?.category||categories[0]?.name||"",
-    price: editingProduct?.price||"", oldPrice: editingProduct?.oldPrice||"",
-    desc: editingProduct?.desc||"", badge: editingProduct?.badge||"",
-    image: editingProduct?.image||"", rating: editingProduct?.rating||4.5, sold: editingProduct?.sold||0,
-  });
-  const [errors, setErrors] = useState({});
-  const [imgPreview, setImgPreview] = useState(editingProduct?.image||"");
-  const [saving, setSaving] = useState(false);
-  const fileRef = useRef();
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
-  const handleImg = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => { set("image", ev.target.result); setImgPreview(ev.target.result); };
-    reader.readAsDataURL(file);
-  };
-  const submit = async () => {
-    const e = {};
-    if (!form.name.trim()) e.name = "Enter product name";
-    if (!form.price || isNaN(form.price)) e.price = "Enter valid price";
-    if (!form.oldPrice || isNaN(form.oldPrice)) e.oldPrice = "Enter old price";
-    setErrors(e); if (Object.keys(e).length > 0) return;
-    setSaving(true);
-    const catObj = categories.find(c=>c.name===form.category);
-    const productData = { ...form, id: editingProduct?.id||Date.now(), price: Number(form.price), oldPrice: Number(form.oldPrice), rating: Number(form.rating), sold: Number(form.sold)||0, image: form.image||(catObj?.icon||"📦") };
-    await onSave(productData, editingProduct?.fbKey||null);
-    setSaving(false);
-  };
-  return (
-    <div>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
-        <button onClick={onDone} style={{background:"none",border:"none",color:"#FF6B35",cursor:"pointer",fontSize:13}}>← Back</button>
-        <h2 style={{margin:0,fontSize:20,color:"#222"}}>{isEdit?"✏️ Edit Product":"➕ Add New Product"}</h2>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:18,alignItems:"start"}}>
-        <div style={{background:"#fff",borderRadius:12,padding:20}}>
-          <div style={{marginBottom:18}}>
-            <label style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:8,display:"block"}}>📷 Product Image</label>
-            <div style={{border:"2px dashed #FF6B35",borderRadius:12,padding:20,textAlign:"center",cursor:"pointer",background:"#FFF5F0"}} onClick={()=>fileRef.current.click()}>
-              {imgPreview ? (imgPreview.startsWith("data:") ? <img src={imgPreview} alt="preview" style={{width:130,height:130,objectFit:"contain",borderRadius:8}} /> : <div style={{fontSize:72}}>{imgPreview}</div>) : (
-                <div><div style={{fontSize:42,marginBottom:6}}>📸</div><div style={{color:"#FF6B35",fontWeight:600,fontSize:13}}>Click to upload</div></div>
-              )}
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleImg} style={{display:"none"}} />
-            </div>
-            {imgPreview && <button onClick={()=>{setImgPreview("");set("image","");}} style={{marginTop:7,background:"#FFEBEE",border:"none",color:"#C62828",padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:11}}>🗑️ Remove</button>}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Product Name *</label>
-              <input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Product ka naam"
-                style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.name?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
-              {errors.name && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.name}</div>}
-            </div>
-            <div>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Category</label>
-              <select value={form.category} onChange={e=>set("category",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
-                {categories.map(c=><option key={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Badge</label>
-              <select value={form.badge} onChange={e=>set("badge",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
-                <option value="">None</option><option>HOT</option><option>NEW</option><option>SALE</option>
-              </select>
-            </div>
-            <div>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Sale Price (Rs.) *</label>
-              <input value={form.price} onChange={e=>set("price",e.target.value)} placeholder="2500" type="number"
-                style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.price?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
-              {errors.price && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.price}</div>}
-            </div>
-            <div>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Original Price (Rs.) *</label>
-              <input value={form.oldPrice} onChange={e=>set("oldPrice",e.target.value)} placeholder="3500" type="number"
-                style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.oldPrice?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
-              {errors.oldPrice && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.oldPrice}</div>}
-            </div>
-            <div>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Rating (1-5)</label>
-              <input value={form.rating} onChange={e=>set("rating",e.target.value)} type="number" min="1" max="5" step="0.1"
-                style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none"}} />
-            </div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Description</label>
-              <textarea value={form.desc} onChange={e=>set("desc",e.target.value)} rows={3} placeholder="Product ki description..."
-                style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",resize:"vertical"}} />
-            </div>
-          </div>
-          <button onClick={submit} disabled={saving} style={{width:"100%",background:saving?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"13px",borderRadius:10,fontSize:15,fontWeight:700,cursor:saving?"not-allowed":"pointer",marginTop:14}}>
-            {saving ? "⏳ Saving..." : isEdit ? "✅ Update Product" : "✅ Upload Product"}
-          </button>
-        </div>
-        <div style={{background:"#fff",borderRadius:12,padding:18,position:"sticky",top:18}}>
-          <div style={{fontWeight:700,marginBottom:12,fontSize:13,color:"#555"}}>👁️ Preview</div>
-          <div style={{border:"1px solid #f0f0f0",borderRadius:12,overflow:"hidden"}}>
-            <div style={{background:"#FFF5F0",padding:"20px",textAlign:"center",fontSize:58,minHeight:110,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {imgPreview ? (imgPreview.startsWith("data:") ? <img src={imgPreview} alt="p" style={{width:85,height:85,objectFit:"contain"}} /> : <span>{imgPreview}</span>) : <span style={{color:"#ccc",fontSize:30}}>📦</span>}
-            </div>
-            <div style={{padding:10}}>
-              <div style={{fontSize:12,fontWeight:600,color:"#222",marginBottom:3}}>{form.name||"Product Name"}</div>
-              <div style={{fontSize:11,color:"#999",marginBottom:5}}>{form.category}</div>
-              {form.price && form.oldPrice && (
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:14,fontWeight:800,color:"#FF6B35"}}>{formatPrice(form.price)}</span>
-                  <span style={{fontSize:10,color:"#ccc",textDecoration:"line-through"}}>{formatPrice(form.oldPrice)}</span>
-                  {Number(form.oldPrice)>0 && <span style={{background:"#FF6B35",color:"#fff",fontSize:9,padding:"1px 5px",borderRadius:4}}>-{discount(form.price,form.oldPrice)}%</span>}
-                </div>
-              )}
-              {form.badge && <span style={{display:"inline-block",marginTop:5,background:form.badge==="HOT"?"#FF6B35":form.badge==="NEW"?"#4CAF50":"#E91E8C",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4}}>{form.badge}</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StoreSettings({ storeConfig, saveStoreConfig, showToast }) {
-  const [form, setForm] = useState({ ...storeConfig });
-  const [saving, setSaving] = useState(false);
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
-  const save = async () => { setSaving(true); await saveStoreConfig({ ...storeConfig, ...form }); showToast("✅ Store settings saved!"); setSaving(false); };
-  return (
-    <div>
-      <h2 style={{margin:"0 0 18px",fontSize:20,color:"#222"}}>⚙️ Store Settings</h2>
-      <div style={{background:"#fff",borderRadius:12,padding:24}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Store Name</label><input value={form.name||""} onChange={e=>set("name",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Tagline</label><input value={form.tagline||""} onChange={e=>set("tagline",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Display Phone</label><input value={form.displayPhone||""} onChange={e=>set("displayPhone",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>WhatsApp (no +)</label><input value={form.whatsapp||""} onChange={e=>set("whatsapp",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>JazzCash Number</label><input value={form.jazz||""} onChange={e=>set("jazz",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>EasyPaisa Number</label><input value={form.easypaisa||""} onChange={e=>set("easypaisa",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Delivery Charges (Rs.)</label><input value={form.delivery||""} onChange={e=>set("delivery",Number(e.target.value))} type="number" style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Address</label><input value={form.address||""} onChange={e=>set("address",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-        </div>
-        <button onClick={save} disabled={saving} style={{marginTop:20,background:saving?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"12px 28px",borderRadius:10,fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-          {saving ? "⏳ Saving..." : "💾 Save to Firebase"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function BannerManager({ storeConfig, saveStoreConfig, showToast }) {
-  const [banners, setBanners] = useState(storeConfig.banners || DEFAULT_STORE.banners);
-  const [saving, setSaving] = useState(false);
-  const updateBanner = (idx, key, val) => setBanners(prev => prev.map((b,i) => i===idx ? {...b,[key]:val} : b));
-  const addBanner = () => setBanners(prev => [...prev, { title: "New Banner", sub: "Subtitle here", bg: "linear-gradient(135deg,#FF6B35,#F7931E)", emoji: "🛍️" }]);
-  const removeBanner = (idx) => { if (banners.length <= 1) { showToast("⚠️ Kam se kam 1 banner!"); return; } setBanners(prev => prev.filter((_,i) => i!==idx)); };
-  const save = async () => { setSaving(true); await saveStoreConfig({ ...storeConfig, banners }); showToast("✅ Banners saved!"); setSaving(false); };
-  const bgPresets = ["linear-gradient(135deg,#FF6B35,#F7931E)","linear-gradient(135deg,#1565C0,#0097A7)","linear-gradient(135deg,#2E7D32,#66BB6A)","linear-gradient(135deg,#6A1B9A,#E91E8C)","linear-gradient(135deg,#E65100,#F57F17)","linear-gradient(135deg,#880E4F,#AD1457)"];
-  return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-        <h2 style={{margin:0,fontSize:20,color:"#222"}}>🖼️ Banner Manager</h2>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={addBanner} style={{background:"#FF9800",border:"none",color:"#fff",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add Banner</button>
-          <button onClick={save} disabled={saving} style={{background:saving?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"9px 16px",borderRadius:10,cursor:saving?"not-allowed":"pointer",fontWeight:600,fontSize:13}}>{saving?"⏳ Saving...":"💾 Save All"}</button>
-        </div>
-      </div>
-      {banners.map((banner, idx) => (
-        <div key={idx} style={{background:"#fff",borderRadius:12,padding:20,marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontWeight:700,fontSize:14,color:"#222"}}>Banner #{idx+1}</div>
-            <button onClick={()=>removeBanner(idx)} style={{background:"#FFEBEE",border:"none",color:"#C62828",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12}}>🗑️ Delete</button>
-          </div>
-          <div style={{background:banner.bg,borderRadius:10,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,minHeight:80}}>
-            <div><div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{banner.title}</div><div style={{fontSize:12,color:"rgba(255,255,255,.9)"}}>{banner.sub}</div></div>
-            <div style={{fontSize:40}}>{banner.emoji}</div>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Title</label><input value={banner.title} onChange={e=>updateBanner(idx,"title",e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e0e0e0",borderRadius:8,fontSize:13,outline:"none"}} /></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Emoji</label><input value={banner.emoji} onChange={e=>updateBanner(idx,"emoji",e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e0e0e0",borderRadius:8,fontSize:20,outline:"none"}} /></div>
-            <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Subtitle</label><input value={banner.sub} onChange={e=>updateBanner(idx,"sub",e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e0e0e0",borderRadius:8,fontSize:13,outline:"none"}} /></div>
-            <div style={{gridColumn:"1/-1"}}>
-              <label style={{fontSize:11,fontWeight:600,color:"#555",marginBottom:6,display:"block"}}>Background Color:</label>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
-                {bgPresets.map((bg,bi)=>(<div key={bi} onClick={()=>updateBanner(idx,"bg",bg)} style={{width:40,height:30,borderRadius:6,background:bg,cursor:"pointer",border:banner.bg===bg?"3px solid #222":"2px solid transparent"}} />))}
-              </div>
-              <input value={banner.bg} onChange={e=>updateBanner(idx,"bg",e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1px solid #e0e0e0",borderRadius:8,fontSize:12,outline:"none",fontFamily:"monospace"}} />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-5f5f5",border:"none",color:"#555",padding:"12px",borderRadius:10,cursor:"pointer",fontWeight:600}}>← Back</button>
-              <button onClick={()=>{const e={};if(!form.name.trim())e.name="Required";if(!form.phone.trim())e.phone="Required";if(!form.house.trim())e.house="Required";if(!form.area.trim())e.area="Required";if(!form.city.trim())e.city="Required";setErrors(e);if(Object.keys(e).length===0)setStep(3);}}
-                style={{flex:2,background:"#FF6B35",border:"none",color:"#fff",padding:"12px",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>Payment →</button>
-            </div>
-          </div>
-        )}
-        {step===3 && (
-          <div style={{background:"#fff",borderRadius:12,padding:16}}>
-            <h3 style={{margin:"0 0 14px",fontSize:16}}>💳 Payment Method</h3>
-            {[{v:"COD",icon:"💵",label:"Cash on Delivery",desc:"Pay when delivered"},{v:"jazz",icon:"📱",label:"JazzCash",desc:`Transfer to: ${STORE.jazz}`},{v:"easypaisa",icon:"💜",label:"EasyPaisa",desc:`Transfer to: ${STORE.easypaisa}`}].map(pm=>(
-              <div key={pm.v} onClick={()=>set("payMethod",pm.v)}
-                style={{display:"flex",alignItems:"center",gap:12,padding:12,borderRadius:12,border:`2px solid ${form.payMethod===pm.v?"#FF6B35":"#e0e0e0"}`,marginBottom:8,cursor:"pointer",background:form.payMethod===pm.v?"#FFF5F0":"#fff"}}>
-                <span style={{fontSize:26}}>{pm.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:600,color:"#222",fontSize:14}}>{pm.label}</div>
-                  <div style={{fontSize:12,color:"#888"}}>{pm.desc}</div>
-                </div>
-                <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${form.payMethod===pm.v?"#FF6B35":"#ccc"}`,background:form.payMethod===pm.v?"#FF6B35":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {form.payMethod===pm.v && <div style={{width:7,height:7,background:"#fff",borderRadius:"50%"}} />}
-                </div>
-              </div>
-            ))}
-            {form.payMethod!=="COD" && (
-              <div style={{background:"#FFF5F0",borderRadius:10,padding:14,marginTop:4}}>
-                <div style={{fontWeight:600,marginBottom:6,fontSize:13}}>📲 Payment Instructions:</div>
-                <div style={{fontSize:12,color:"#555",lineHeight:1.8}}>
-                  1. Transfer <strong>Rs. {total.toLocaleString()}</strong> to {form.payMethod==="jazz"?STORE.jazz:STORE.easypaisa}<br/>
-                  2. Enter Transaction ID below<br/>
-                  3. Send screenshot to WhatsApp: <a href={`https://wa.me/${STORE.whatsapp}`} style={{color:"#25D366"}}>{STORE.displayPhone}</a>
-                </div>
-                <Field label="Transaction ID *" val={form.transId} onChange={v=>set("transId",v)} err={errors.transId} placeholder="Enter Transaction ID" />
-                <div style={{marginTop:8}}>
-                  <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:5,display:"block"}}>Upload Screenshot (optional)</label>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>set("screenshot",ev.target.result);r.readAsDataURL(f);}}} style={{fontSize:12,color:"#555"}} />
-                  {form.screenshot && <img src={form.screenshot} alt="receipt" style={{width:110,height:90,objectFit:"cover",borderRadius:8,marginTop:6,border:"1px solid #e0e0e0"}} />}
-                </div>
-              </div>
-            )}
-            <div style={{display:"flex",gap:8,marginTop:14}}>
-              <button onClick={()=>setStep(2)} style={{flex:1,background:"#f5f5f5",border:"none",color:"#555",padding:"12px",borderRadius:10,cursor:"pointer",fontWeight:600}}>← Back</button>
-              <button onClick={placeOrder} disabled={placing} style={{flex:2,background:placing?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"12px",borderRadius:10,fontSize:14,fontWeight:700,cursor:placing?"not-allowed":"pointer"}}>
-                {placing ? "⏳ Placing Order..." : "✅ Place Order"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, val, onChange, err, placeholder, type="text" }) {
-  return (
-    <div style={{marginBottom:10}}>
-      <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>{label}</label>
-      <input value={val} type={type} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{width:"100%",padding:"9px 11px",border:`1px solid ${err?"#f44336":"#e0e0e0"}`,borderRadius:8,fontSize:13,outline:"none",background:"#fafafa"}} />
-      {err && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {err}</div>}
-    </div>
-  );
-}
-
-function SuccessPage({ order, STORE, onHome }) {
-  return (
-    <div style={{fontFamily:"'Segoe UI',sans-serif",minHeight:"100vh",background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",padding:14}}>
-      <div style={{background:"#fff",borderRadius:18,padding:32,maxWidth:480,width:"100%",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.1)"}}>
-        <div style={{fontSize:64,marginBottom:14}}>🎉</div>
-        <h2 style={{color:"#4CAF50",margin:"0 0 6px",fontSize:22}}>Order Placed Successfully!</h2>
-        <div style={{fontSize:13,color:"#888",marginBottom:18}}>Order ID: <strong style={{color:"#FF6B35"}}>{order?.id}</strong></div>
-        <div style={{background:"#F5F5F5",borderRadius:10,padding:14,textAlign:"left",marginBottom:18}}>
-          <div style={{fontSize:13,color:"#555",lineHeight:2}}>
-            <b>Customer:</b> {order?.customer?.name}<br/>
-            <b>Phone:</b> {order?.customer?.phone}<br/>
-            <b>City:</b> {order?.customer?.city}<br/>
-            <b>Payment:</b> {order?.customer?.payMethod==="COD"?"Cash on Delivery":order?.customer?.payMethod==="jazz"?"JazzCash":"EasyPaisa"}<br/>
-            <b>Total:</b> <span style={{color:"#FF6B35",fontWeight:700}}>{formatPrice(order?.total)}</span>
-          </div>
-        </div>
-        {order?.customer?.payMethod!=="COD" && (
-          <div style={{background:"#FFF5F0",borderRadius:10,padding:10,marginBottom:14,fontSize:12,color:"#555"}}>
-            ⚠️ Please send payment screenshot to WhatsApp:<br/>
-            <a href={`https://wa.me/${STORE.whatsapp}`} style={{color:"#25D366",fontWeight:700}}>{STORE.displayPhone}</a>
-          </div>
-        )}
-        <a href={`https://wa.me/${STORE.whatsapp}?text=Order ID: ${order?.id}. Name: ${order?.customer?.name}, Phone: ${order?.customer?.phone}, Total: Rs.${order?.total}`}
-          target="_blank" rel="noopener noreferrer"
-          style={{display:"block",background:"#25D366",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,textDecoration:"none",marginBottom:8}}>
-          💬 Confirm on WhatsApp
-        </a>
-        <button onClick={onHome} style={{width:"100%",background:"#FF6B35",border:"none",color:"#fff",padding:"12px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-          🏠 Back to Home
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function AdminLogin({ onLogin }) {
-  const [user, setUser] = useState(""); const [pass, setPass] = useState(""); const [err, setErr] = useState("");
-  const login = () => {
-    if (user===ADMIN_CREDS.name && pass===ADMIN_CREDS.password) onLogin();
-    else setErr("Wrong username or password!");
-  };
-  return (
-    <div style={{fontFamily:"'Segoe UI',sans-serif",minHeight:"100vh",background:"linear-gradient(135deg,#FF6B35,#E85520)",display:"flex",alignItems:"center",justifyContent:"center",padding:14}}>
-      <div style={{background:"#fff",borderRadius:18,padding:36,maxWidth:380,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:44}}>🔒</div>
-          <h2 style={{margin:"6px 0 3px",color:"#222"}}>Admin Login</h2>
-          <div style={{fontSize:12,color:"#888"}}>Lifestyle Collections</div>
-        </div>
-        <Field label="Admin Name" val={user} onChange={setUser} placeholder="Admin name" />
-        <Field label="Password" val={pass} onChange={setPass} placeholder="Password" type="password" />
-        {err && <div style={{color:"#f44336",fontSize:13,marginBottom:10,background:"#ffebee",padding:"8px 12px",borderRadius:8}}>⚠️ {err}</div>}
-        <button onClick={login} style={{width:"100%",background:"#FF6B35",border:"none",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>Login</button>
-      </div>
-    </div>
-  );
-}
-
-function AdminPanel({ page, go, products, orders, storeConfig, categories, saveProduct, deleteProduct, updateOrderStatus, saveStoreConfig, saveCategories, editingProduct, showToast, onLogout }) {
-  const totalRevenue = orders.reduce((s,o)=>s+(o.total||0),0);
-  const pendingOrders = orders.filter(o=>o.status==="Pending").length;
-  return (
-    <div style={{fontFamily:"'Segoe UI',sans-serif",display:"flex",minHeight:"100vh",background:"#F0F2F5"}}>
-      <div style={{width:200,background:"#1A1A2E",color:"#fff",padding:"18px 0",flexShrink:0,display:"flex",flexDirection:"column"}}>
-        <div style={{padding:"0 16px 16px",borderBottom:"1px solid #2d2d4e"}}>
-          <div style={{fontSize:13,fontWeight:800,color:"#FF6B35"}}>Lifestyle Collections</div>
-          <div style={{fontSize:10,color:"#888",marginTop:2}}>Admin Panel</div>
-          <div style={{fontSize:9,color:"#4CAF50",marginTop:2}}>🟢 Firebase Connected</div>
-        </div>
-        <nav style={{flex:1,padding:"10px 0"}}>
-          {[
-            {id:"adminDash",icon:"📊",label:"Dashboard"},
-            {id:"adminProds",icon:"📦",label:"Products"},
-            {id:"adminOrders",icon:"📋",label:"Orders"},
-            {id:"adminCats",icon:"🗂️",label:"Categories"},
-            {id:"adminStore",icon:"⚙️",label:"Store Settings"},
-            {id:"adminBanners",icon:"🖼️",label:"Banners"},
-          ].map(item=>(
-            <button key={item.id} onClick={()=>go(item.id)}
-              style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 16px",background:page===item.id?"rgba(255,107,53,.2)":"transparent",border:"none",color:page===item.id?"#FF6B35":"#ccc",cursor:"pointer",fontSize:13,borderLeft:page===item.id?"3px solid #FF6B35":"3px solid transparent",textAlign:"left"}}>
-              <span>{item.icon}</span> {item.label}
-            </button>
-          ))}
-        </nav>
-        <button onClick={onLogout} style={{margin:"0 12px 12px",background:"rgba(255,255,255,.1)",border:"none",color:"#ccc",padding:"9px",borderRadius:8,cursor:"pointer",fontSize:12}}>🚪 Logout</button>
-      </div>
-      <div style={{flex:1,padding:20,overflowY:"auto"}}>
-        {page==="adminDash" && (
-          <div>
-            <h2 style={{margin:"0 0 18px",fontSize:20,color:"#222"}}>📊 Dashboard</h2>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:14,marginBottom:20}}>
-              {[{icon:"📦",label:"Total Products",val:products.length,color:"#FF6B35"},{icon:"📋",label:"Total Orders",val:orders.length,color:"#2196F3"},{icon:"⏳",label:"Pending Orders",val:pendingOrders,color:"#FF9800"},{icon:"💰",label:"Total Revenue",val:formatPrice(totalRevenue),color:"#4CAF50"}].map(s=>(
-                <div key={s.label} style={{background:"#fff",borderRadius:12,padding:18,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-                  <div style={{fontSize:28,marginBottom:6}}>{s.icon}</div>
-                  <div style={{fontSize:20,fontWeight:800,color:s.color}}>{s.val}</div>
-                  <div style={{fontSize:11,color:"#888",marginTop:3}}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{background:"#fff",borderRadius:12,padding:18}}>
-              <h3 style={{margin:"0 0 12px",fontSize:15}}>⚡ Quick Actions</h3>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <button onClick={()=>go("adminAddProd",{editProduct:null})} style={{background:"#FF6B35",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>+ New Product</button>
-                <button onClick={()=>go("adminOrders")} style={{background:"#2196F3",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>📋 Orders</button>
-                <button onClick={()=>go("adminCats")} style={{background:"#4CAF50",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>🗂️ Categories</button>
-                <button onClick={()=>go("adminStore")} style={{background:"#9C27B0",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>⚙️ Store Settings</button>
-                <button onClick={()=>go("adminBanners")} style={{background:"#FF9800",border:"none",color:"#fff",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>🖼️ Banners</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {page==="adminProds" && (
-          <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-              <h2 style={{margin:0,fontSize:20,color:"#222"}}>📦 Products ({products.length})</h2>
-              <button onClick={()=>go("adminAddProd",{editProduct:null})} style={{background:"#FF6B35",border:"none",color:"#fff",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>+ New Product</button>
-            </div>
-            <div style={{background:"#fff",borderRadius:12,overflow:"hidden"}}>
-              <div style={{display:"grid",gridTemplateColumns:"54px 1fr 90px 90px 90px 110px",padding:"10px 14px",fontWeight:600,fontSize:11,color:"#555",background:"#F5F5F5"}}>
-                <span>Img</span><span>Product</span><span>Category</span><span>Price</span><span>Sold</span><span>Actions</span>
-              </div>
-              {products.map((p,idx)=>(
-                <div key={p.fbKey||p.id} style={{display:"grid",gridTemplateColumns:"54px 1fr 90px 90px 90px 110px",padding:"10px 14px",borderBottom:"1px solid #f5f5f5",alignItems:"center",background:idx%2===0?"#fff":"#fafafa"}}>
-                  <div style={{width:40,height:40,background:"#FFF5F0",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>
-                    {p.image&&p.image.startsWith("data:")? <img src={p.image} alt="" style={{width:34,height:34,objectFit:"contain"}} /> : p.image}
-                  </div>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#222",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
-                    {p.badge && <span style={{background:"#FFF5F0",color:"#FF6B35",padding:"1px 5px",borderRadius:4,fontSize:9,fontWeight:700}}>{p.badge}</span>}
-                  </div>
-                  <div style={{fontSize:11,color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.category}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#FF6B35"}}>{formatPrice(p.price)}</div>
-                  <div style={{fontSize:11,color:"#888"}}>{p.sold||0}</div>
-                  <div style={{display:"flex",gap:4}}>
-                    <button onClick={()=>go("adminAddProd",{editProduct:p})} style={{background:"#E3F2FD",border:"none",color:"#1565C0",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>Edit</button>
-                    <button onClick={async()=>{if(window.confirm(`Delete "${p.name}"?`)){await deleteProduct(p.fbKey);showToast("Deleted!");}}} style={{background:"#FFEBEE",border:"none",color:"#C62828",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>Del</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {page==="adminAddProd" && (
-          <AddProductForm editingProduct={editingProduct} showToast={showToast} categories={categories}
-            onSave={async (productData, fbKey) => { await saveProduct(productData, fbKey); showToast(fbKey ? "✅ Updated!" : "✅ Added!"); go("adminProds"); }}
-            onDone={()=>go("adminProds")} />
-        )}
-        {page==="adminOrders" && (
-          <div>
-            <h2 style={{margin:"0 0 18px",fontSize:20,color:"#222"}}>📋 Orders ({orders.length})</h2>
-            {orders.length===0 ? (
-              <div style={{background:"#fff",borderRadius:12,padding:40,textAlign:"center",color:"#aaa"}}><div style={{fontSize:46}}>📭</div><p>No orders yet</p></div>
-            ) : (
-              orders.map(order=>(
-                <div key={order.fbKey||order.id} style={{background:"#fff",borderRadius:12,padding:18,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#222"}}>#{order.id}</div>
-                      <div style={{fontSize:11,color:"#888"}}>{order.date}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:17,fontWeight:800,color:"#FF6B35"}}>{formatPrice(order.total)}</div>
-                      <select value={order.status} onChange={async e=>{await updateOrderStatus(order.fbKey,e.target.value);showToast("Status updated!");}}
-                        style={{fontSize:12,padding:"4px 7px",borderRadius:6,border:"1px solid #e0e0e0",cursor:"pointer"}}>
-                        {["Pending","Confirmed","Shipped","Delivered","Cancelled"].map(s=><option key={s}>{s}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,fontSize:12}}>
-                    <div style={{background:"#F5F5F5",borderRadius:8,padding:10}}>
-                      <div style={{fontWeight:600,marginBottom:5,color:"#555"}}>👤 Customer</div>
-                      <div style={{color:"#555",lineHeight:1.9}}><b>Name:</b> {order.customer?.name}<br/><b>Phone:</b> {order.customer?.phone}<br/><b>Address:</b> {order.customer?.house}, {order.customer?.area}, {order.customer?.city}</div>
-                    </div>
-                    <div style={{background:"#F5F5F5",borderRadius:8,padding:10}}>
-                      <div style={{fontWeight:600,marginBottom:5,color:"#555"}}>💳 Payment</div>
-                      <div style={{color:"#555",lineHeight:1.9}}><b>Method:</b> {order.customer?.payMethod==="COD"?"Cash on Delivery":order.customer?.payMethod==="jazz"?"JazzCash":"EasyPaisa"}<br/>{order.customer?.transId && <><b>Trans ID:</b> {order.customer.transId}<br/></>}<b>Total:</b> <span style={{color:"#FF6B35",fontWeight:700}}>{formatPrice(order.total)}</span></div>
-                    </div>
-                  </div>
-                  <div style={{marginTop:10}}>
-                    <div style={{fontWeight:600,fontSize:12,color:"#555",marginBottom:6}}>📦 Items:</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {order.items?.map((item,i)=>(
-                        <div key={i} style={{background:"#FFF5F0",padding:"5px 10px",borderRadius:7,fontSize:11,color:"#555"}}>{item.name} ×{item.qty} = {formatPrice(item.price*item.qty)}</div>
-                      ))}
-                    </div>
-                  </div>
-                  <a href={`https://wa.me/${order.customer?.phone?.replace(/[^0-9]/g,"")}?text=Assalam o Alaikum ${order.customer?.name}! Your order #${order.id} is ${order.status}. Lifestyle Collections`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{display:"inline-flex",alignItems:"center",gap:5,background:"#25D366",color:"#fff",padding:"7px 12px",borderRadius:7,fontSize:11,fontWeight:600,textDecoration:"none",marginTop:8}}>
-                    💬 WhatsApp Customer
-                  </a>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-        {page==="adminCats" && <CategoriesManager categories={categories} saveCategories={saveCategories} showToast={showToast} />}
-        {page==="adminStore" && <StoreSettings storeConfig={storeConfig} saveStoreConfig={saveStoreConfig} showToast={showToast} />}
-        {page==="adminBanners" && <BannerManager storeConfig={storeConfig} saveStoreConfig={saveStoreConfig} showToast={showToast} />}
-      </div>
-    </div>
-  );
-}
-
-function CategoriesManager({ categories, saveCategories, showToast }) {
   const [cats, setCats] = useState(categories.map(c=>({...c})));
   const [saving, setSaving] = useState(false);
   const update = (idx, key, val) => setCats(prev => prev.map((c,i) => i===idx ? {...c,[key]:val} : c));
@@ -1431,14 +912,17 @@ function CategoriesManager({ categories, saveCategories, showToast }) {
         </div>
       </div>
       <div style={{background:"#E8F5E9",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#2E7D32"}}>
-        ℹ️ Category name change karne ke baad <b>Save All</b> click karo. Products automatically naye naam se match honge agar aap products bhi update karen.
+        ℹ️ Category name change karne ke baad <b>Save All</b> click karo.
       </div>
       {cats.map((cat, idx) => (
         <div key={idx} style={{background:"#fff",borderRadius:12,padding:18,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:40,height:40,borderRadius:10,background:cat.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{cat.icon}</div>
-              <div style={{fontWeight:700,fontSize:14,color:"#222"}}>{cat.name}</div>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:"#222"}}>{cat.name}</div>
+                <div style={{fontSize:11,color:"#888"}}>{products ? products.filter(p=>p.category===cat.name).length : 0} products</div>
+              </div>
             </div>
             <button onClick={()=>removeCat(idx)} style={{background:"#FFEBEE",border:"none",color:"#C62828",padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:12}}>🗑️ Delete</button>
           </div>
@@ -1481,13 +965,13 @@ function AddProductForm({ editingProduct, showToast, onSave, onDone, categories 
   const [imgPreview, setImgPreview] = useState(editingProduct?.image||"");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef();
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const setF = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const handleImg = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => { set("image", ev.target.result); setImgPreview(ev.target.result); };
+    reader.onload = (ev) => { setF("image", ev.target.result); setImgPreview(ev.target.result); };
     reader.readAsDataURL(file);
   };
 
@@ -1521,47 +1005,47 @@ function AddProductForm({ editingProduct, showToast, onSave, onDone, categories 
               )}
               <input ref={fileRef} type="file" accept="image/*" onChange={handleImg} style={{display:"none"}} />
             </div>
-            {imgPreview && <button onClick={()=>{setImgPreview("");set("image","");}} style={{marginTop:7,background:"#FFEBEE",border:"none",color:"#C62828",padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:11}}>🗑️ Remove</button>}
+            {imgPreview && <button onClick={()=>{setImgPreview("");setF("image","");}} style={{marginTop:7,background:"#FFEBEE",border:"none",color:"#C62828",padding:"5px 12px",borderRadius:7,cursor:"pointer",fontSize:11}}>🗑️ Remove</button>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             <div style={{gridColumn:"1/-1"}}>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Product Name *</label>
-              <input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Product ka naam"
+              <input value={form.name} onChange={e=>setF("name",e.target.value)} placeholder="Product ka naam"
                 style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.name?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
               {errors.name && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.name}</div>}
             </div>
             <div>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Category</label>
-              <select value={form.category} onChange={e=>set("category",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
+              <select value={form.category} onChange={e=>setF("category",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
                 {categories.map(c=><option key={c.name}>{c.name}</option>)}
               </select>
             </div>
             <div>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Badge</label>
-              <select value={form.badge} onChange={e=>set("badge",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
+              <select value={form.badge} onChange={e=>setF("badge",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",background:"#fff"}}>
                 <option value="">None</option><option>HOT</option><option>NEW</option><option>SALE</option>
               </select>
             </div>
             <div>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Sale Price (Rs.) *</label>
-              <input value={form.price} onChange={e=>set("price",e.target.value)} placeholder="2500" type="number"
+              <input value={form.price} onChange={e=>setF("price",e.target.value)} placeholder="2500" type="number"
                 style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.price?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
               {errors.price && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.price}</div>}
             </div>
             <div>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Original Price (Rs.) *</label>
-              <input value={form.oldPrice} onChange={e=>set("oldPrice",e.target.value)} placeholder="3500" type="number"
+              <input value={form.oldPrice} onChange={e=>setF("oldPrice",e.target.value)} placeholder="3500" type="number"
                 style={{width:"100%",padding:"10px 12px",border:`1px solid ${errors.oldPrice?"#f44336":"#e0e0e0"}`,borderRadius:9,fontSize:13,outline:"none"}} />
               {errors.oldPrice && <div style={{fontSize:11,color:"#f44336",marginTop:2}}>⚠️ {errors.oldPrice}</div>}
             </div>
             <div>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Rating (1-5)</label>
-              <input value={form.rating} onChange={e=>set("rating",e.target.value)} type="number" min="1" max="5" step="0.1"
+              <input value={form.rating} onChange={e=>setF("rating",e.target.value)} type="number" min="1" max="5" step="0.1"
                 style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none"}} />
             </div>
             <div style={{gridColumn:"1/-1"}}>
               <label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:3,display:"block"}}>Description</label>
-              <textarea value={form.desc} onChange={e=>set("desc",e.target.value)} rows={3} placeholder="Product ki description..."
+              <textarea value={form.desc} onChange={e=>setF("desc",e.target.value)} rows={3} placeholder="Product ki description..."
                 style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:13,outline:"none",resize:"vertical"}} />
             </div>
           </div>
@@ -1597,7 +1081,7 @@ function AddProductForm({ editingProduct, showToast, onSave, onDone, categories 
 function StoreSettings({ storeConfig, saveStoreConfig, showToast }) {
   const [form, setForm] = useState({ ...storeConfig });
   const [saving, setSaving] = useState(false);
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const setF = (k,v) => setForm(f=>({...f,[k]:v}));
   const save = async () => {
     setSaving(true);
     await saveStoreConfig({ ...storeConfig, ...form });
@@ -1609,14 +1093,14 @@ function StoreSettings({ storeConfig, saveStoreConfig, showToast }) {
       <h2 style={{margin:"0 0 18px",fontSize:20,color:"#222"}}>⚙️ Store Settings</h2>
       <div style={{background:"#fff",borderRadius:12,padding:24}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Store Name</label><input value={form.name||""} onChange={e=>set("name",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Tagline</label><input value={form.tagline||""} onChange={e=>set("tagline",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Display Phone</label><input value={form.displayPhone||""} onChange={e=>set("displayPhone",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>WhatsApp (no +)</label><input value={form.whatsapp||""} onChange={e=>set("whatsapp",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>JazzCash Number</label><input value={form.jazz||""} onChange={e=>set("jazz",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>EasyPaisa Number</label><input value={form.easypaisa||""} onChange={e=>set("easypaisa",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Delivery Charges (Rs.)</label><input value={form.delivery||""} onChange={e=>set("delivery",Number(e.target.value))} type="number" style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
-          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Address</label><input value={form.address||""} onChange={e=>set("address",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Store Name</label><input value={form.name||""} onChange={e=>setF("name",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Tagline</label><input value={form.tagline||""} onChange={e=>setF("tagline",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Display Phone</label><input value={form.displayPhone||""} onChange={e=>setF("displayPhone",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>WhatsApp (no +)</label><input value={form.whatsapp||""} onChange={e=>setF("whatsapp",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>JazzCash Number</label><input value={form.jazz||""} onChange={e=>setF("jazz",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>EasyPaisa Number</label><input value={form.easypaisa||""} onChange={e=>setF("easypaisa",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Delivery Charges (Rs.)</label><input value={form.delivery||""} onChange={e=>setF("delivery",Number(e.target.value))} type="number" style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
+          <div style={{gridColumn:"1/-1"}}><label style={{fontSize:12,fontWeight:600,color:"#555",marginBottom:4,display:"block"}}>Address</label><input value={form.address||""} onChange={e=>setF("address",e.target.value)} style={{width:"100%",padding:"10px 12px",border:"1px solid #e0e0e0",borderRadius:9,fontSize:14,outline:"none"}} /></div>
         </div>
         <button onClick={save} disabled={saving} style={{marginTop:20,background:saving?"#aaa":"#FF6B35",border:"none",color:"#fff",padding:"12px 28px",borderRadius:10,fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
           {saving ? "⏳ Saving..." : "💾 Save to Firebase"}
